@@ -14,6 +14,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String selectedPeriod = '1mo';
+  int? touchedIndex;
 
   @override
   void initState() {
@@ -70,6 +71,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     style: TextStyle(fontSize: 18, color: Colors.grey),
                   ),
                   _buildInvestmentsList(tradeProvider),
+                  const SizedBox(height: 20),
+                  _buildPieChart(tradeProvider),
                   const SizedBox(height: 100),
                 ],
               ),
@@ -113,7 +116,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 ElevatedButton(
                   onPressed: () {
-                    Navigator.pushNamed(context, '/add_trade');
+                    Navigator.pushNamed(context, '/browse');
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.black,
@@ -122,7 +125,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       borderRadius: BorderRadius.circular(15), // More rounded border
                     ),
                   ),
-                  child: const Text('Browse', style: TextStyle(fontSize: 17)), // Larger text
+                  child: const Text('Esplora', style: TextStyle(fontSize: 17)), // Larger text
                 ),
                 ElevatedButton(
                   onPressed: () {
@@ -350,9 +353,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: const Icon(Icons.delete, color: Colors.white),
                   ),
                   child: ListTile(
-                    title: Text('Trade: $formattedDate'),
-                    subtitle: Text('€ ${trade.unitPrice} X ${trade.quantity} = ${trade.quantity*trade.unitPrice} €'),
-
+                    title: Text('${trade.type} - Trade del: $formattedDate'),
+                    subtitle: Text(' € ${trade.unitPrice} X ${trade.quantity} = ${trade.quantity * trade.unitPrice} €'),
                   ),
                 );
               },
@@ -374,6 +376,115 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         );
       },
+    );
+  }
+
+  Widget _buildPieChart(TradeProvider tradeProvider) {
+    final stocksTotal = tradeProvider.trades
+        .where((trade) => trade.type == 'Stocks')
+        .fold(0.0, (sum, trade) => sum + (trade.unitPrice * trade.quantity));
+    final etfsTotal = tradeProvider.trades
+        .where((trade) => trade.type == 'ETFs')
+        .fold(0.0, (sum, trade) => sum + (trade.unitPrice * trade.quantity));
+    final bondsTotal = tradeProvider.trades
+        .where((trade) => trade.type == 'Bonds')
+        .fold(0.0, (sum, trade) => sum + (trade.unitPrice * trade.quantity));
+
+    final total = stocksTotal + etfsTotal + bondsTotal;
+
+    if (total == 0) {
+      return const Center(child: Text('Dati insufficienti per il grafico a torta!'));
+    }
+
+    final sections = <PieChartSectionData>[];
+
+    if (stocksTotal > 0) {
+      sections.add(
+        PieChartSectionData(
+          color: Colors.lightGreen,
+          value: (stocksTotal / total) * 100,
+          title: '${(stocksTotal / total * 100).toStringAsFixed(1)}%',
+          radius: touchedIndex == 0 ? 60 : 50,
+          titleStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+        ),
+      );
+    }
+
+    if (etfsTotal > 0) {
+      sections.add(
+        PieChartSectionData(
+          color: Colors.green,
+          value: (etfsTotal / total) * 100,
+          title: '${(etfsTotal / total * 100).toStringAsFixed(1)}%',
+          radius: touchedIndex == 1 ? 60 : 50,
+          titleStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+        ),
+      );
+    }
+
+    if (bondsTotal > 0) {
+      sections.add(
+        PieChartSectionData(
+          color: Colors.green[900],
+          value: (bondsTotal / total) * 100,
+          title: '${(bondsTotal / total * 100).toStringAsFixed(1)}%',
+          radius: touchedIndex == 2 ? 60 : 50,
+          titleStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        SizedBox(
+          height: 200,
+          child: PieChart(
+            PieChartData(
+              sections: sections,
+              centerSpaceRadius: 40,
+              sectionsSpace: 2,
+              pieTouchData: PieTouchData(
+                touchCallback: (FlTouchEvent event, PieTouchResponse? pieTouchResponse) {
+                  setState(() {
+                    if (pieTouchResponse == null || pieTouchResponse.touchedSection == null) {
+                      touchedIndex = -1;
+                      return;
+                    }
+                    touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
+                  });
+                },
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        _buildLegend(),
+      ],
+    );
+  }
+
+  Widget _buildLegend() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        _buildLegendItem('Stocks', Colors.lightGreen),
+        _buildLegendItem('ETFs', Colors.green),
+        _buildLegendItem('Bonds', Colors.green[900]!),
+      ],
+    );
+  }
+
+  Widget _buildLegendItem(String title, Color color) {
+    return Row(
+      children: [
+        Container(
+          width: 16,
+          height: 16,
+          color: color,
+        ),
+        const SizedBox(width: 4),
+        Text(title),
+      ],
     );
   }
 }

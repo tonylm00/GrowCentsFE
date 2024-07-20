@@ -61,13 +61,12 @@ class _AddTradeScreenState extends State<AddTradeScreen> {
       if (response.statusCode == 200) {
         if (mounted) {
           await Provider.of<TradeProvider>(context, listen: false).fetchTrades();
-          Navigator.pop(context); // Torna alla schermata precedente (home)
+          Navigator.pop(context);
         }
       } else {
         if (mounted) {
-          // Gestisci l'errore
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Errore nell\'aggiunta del trade')),
+            const SnackBar(content: Text('Errore nell\'aggiunta del trade')),
           );
         }
       }
@@ -96,12 +95,11 @@ class _AddTradeScreenState extends State<AddTradeScreen> {
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: _isLoading
-            ? Center(child: CircularProgressIndicator())
+            ? const Center(child: CircularProgressIndicator())
             : Form(
           key: _formKey,
           child: ListView(
             children: [
-              _buildImageSection(),
               const SizedBox(height: 20),
               const Text(
                 'Aggiungi Trade',
@@ -114,27 +112,27 @@ class _AddTradeScreenState extends State<AddTradeScreen> {
               _buildTickerSearchField(),
               const SizedBox(height: 20),
               TextFormField(
-                decoration: const InputDecoration(labelText: 'Unit Price'),
+                decoration: const InputDecoration(labelText: 'Prezzo dell\' asset'),
                 keyboardType: TextInputType.number,
                 onSaved: (value) {
                   _unitPrice = double.parse(value!);
                 },
                 validator: (value) {
                   if (value == null || double.tryParse(value) == null) {
-                    return 'Please enter a valid unit price';
+                    return 'Inserisci un prezzo valido';
                   }
                   return null;
                 },
               ),
               TextFormField(
-                decoration: const InputDecoration(labelText: 'Quantity'),
+                decoration: const InputDecoration(labelText: 'Quantità'),
                 keyboardType: TextInputType.number,
                 onSaved: (value) {
                   _quantity = double.parse(value!);
                 },
                 validator: (value) {
                   if (value == null || double.tryParse(value) == null) {
-                    return 'Please enter a valid quantity';
+                    return 'Inserisci una quantità valida';
                   }
                   return null;
                 },
@@ -144,14 +142,14 @@ class _AddTradeScreenState extends State<AddTradeScreen> {
                   Expanded(
                     child: Text(
                       _selectedDate == null
-                          ? 'No Date Chosen!'
-                          : 'Picked Date: ${_selectedDate!.toLocal()}'.split(' ')[0],
+                          ? 'Nessuna data selezionata!'
+                          : 'Data: ${_selectedDate!.toLocal()}'.split(' ')[0],
                     ),
                   ),
                   TextButton(
                     onPressed: _presentDatePicker,
                     child: const Text(
-                      'Choose Date',
+                      'Scegli data',
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
@@ -162,23 +160,11 @@ class _AddTradeScreenState extends State<AddTradeScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.black,
                 ),
-                child: const Text('Add Trade'),
+                child: const Text('Conferma'),
               ),
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildImageSection() {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(10.0),
-      child: Image.asset(
-        'assets/images/trade.jpg',
-        height: 150,
-        width: double.infinity,
-        fit: BoxFit.cover,
       ),
     );
   }
@@ -194,7 +180,7 @@ class _AddTradeScreenState extends State<AddTradeScreen> {
           return option.contains(pattern.toUpperCase());
         });
       },
-      debounceDuration: Duration(milliseconds: 300),
+      debounceDuration: const Duration(milliseconds: 300),
       itemBuilder: (context, String suggestion) {
         return ListTile(
           title: Text('$suggestion - ${_supportedTickers[suggestion]}'),
@@ -209,7 +195,7 @@ class _AddTradeScreenState extends State<AddTradeScreen> {
       },
       validator: (value) {
         if (_selectedTicker == null || !_supportedTickers.containsKey(_selectedTicker!)) {
-          return 'Please select a valid ticker';
+          return 'Inserisci un ticker valido';
         }
         return null;
       },

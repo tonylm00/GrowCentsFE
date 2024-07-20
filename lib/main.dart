@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_growcents/providers/blog_provider.dart';
+import 'package:flutter_growcents/screens/browse_screen.dart';
 import 'package:provider/provider.dart';
 import 'providers/mifid_provider.dart';
 import 'providers/trade_provider.dart';
@@ -19,6 +21,8 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (context) => MifidProvider()),
         ChangeNotifierProvider(create: (context) => TradeProvider()),
+        ChangeNotifierProvider(create: (context) => BlogProvider()),
+
       ],
       child: MaterialApp(
         title: 'Personal Finance App',
@@ -26,6 +30,8 @@ class MyApp extends StatelessWidget {
         routes: {
           '/mifid': (context) => const MifidScreen(),
           '/add_trade': (context) => const AddTradeScreen(),
+          '/browse': (context) => const BrowsePage(),
+
         },
       ),
     );
