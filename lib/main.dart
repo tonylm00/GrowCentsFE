@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_growcents/providers/todo_provider.dart';
-import 'package:flutter_growcents/widgets/tasks.dart';
 import 'package:provider/provider.dart';
+import 'providers/mifid_provider.dart';
+import 'providers/trade_provider.dart';
+import 'screens/home_screen.dart';
+import 'screens/mifid_screen.dart';
+import 'screens/add_trade_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -12,39 +15,19 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider.value(
-        value: TodoProvider(),
-        child: MaterialApp(
-          debugShowCheckedModeBanner: false,
-          title: 'Flutter Demo',
-          theme: ThemeData(
-            primarySwatch: Colors.purple,
-          ),
-          home: const MyHomePage(title: 'Todo app'),
-        )
-    );
-  }
-}
-
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      resizeToAvoidBottomInset: false,
-      appBar: AppBar(
-        title: Text(widget.title),
-        centerTitle: true,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => MifidProvider()),
+        ChangeNotifierProvider(create: (context) => TradeProvider()),
+      ],
+      child: MaterialApp(
+        title: 'Personal Finance App',
+        home: const HomeScreen(),
+        routes: {
+          '/mifid': (context) => const MifidScreen(),
+          '/add_trade': (context) => const AddTradeScreen(),
+        },
       ),
-      body: const TasksWidget(),
     );
   }
 }
