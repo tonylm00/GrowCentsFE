@@ -9,6 +9,8 @@ class TradeProvider with ChangeNotifier {
   double portfolioChangePercentage = 0.0;
   List<FlSpot> graphData = [];
   List<Trade> trades = [];
+  List<Map<String, dynamic>> topAssets = [];
+  bool isLoading = false;
 
   Future<void> fetchPortfolioValue() async {
     try {
@@ -67,6 +69,33 @@ class TradeProvider with ChangeNotifier {
     } catch (error) {
       print('Error fetching trades: $error');
     }
+    notifyListeners();
+  }
+
+  Future<void> fetchTopAssets() async {
+    isLoading = true;
+    notifyListeners();
+
+    try {
+      final response = await http.get(Uri.parse('http://10.0.2.2:5000/trades/top_assets'));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as List;
+        topAssets = data.map((asset) {
+          return {
+            'ticker': asset['ticker'] ?? 'N/A',
+            'company': asset['company'] ?? 'Unknown',
+            'current_price': (asset['current_price'] ?? 0.0).toDouble(),
+            'history': asset['history'] ?? [],
+          };
+        }).toList();
+      } else {
+        throw Exception('Failed to fetch top assets');
+      }
+    } catch (error) {
+      print('Error fetching top assets: $error');
+    }
+
+    isLoading = false;
     notifyListeners();
   }
 
