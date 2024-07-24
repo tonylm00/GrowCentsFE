@@ -10,6 +10,7 @@ class TradeProvider with ChangeNotifier {
   List<FlSpot> graphData = [];
   List<Trade> trades = [];
   List<Map<String, dynamic>> topAssets = [];
+  List<FlSpot> assetGraphData = [];
   bool isLoading = false;
 
   Future<void> fetchPortfolioValue() async {
@@ -80,14 +81,7 @@ class TradeProvider with ChangeNotifier {
       final response = await http.get(Uri.parse('http://10.0.2.2:5000/trades/top_assets'));
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as List;
-        topAssets = data.map((asset) {
-          return {
-            'ticker': asset['ticker'] ?? 'N/A',
-            'company': asset['company'] ?? 'Unknown',
-            'current_price': (asset['current_price'] ?? 0.0).toDouble(),
-            'history': asset['history'] ?? [],
-          };
-        }).toList();
+        topAssets = data.cast<Map<String, dynamic>>();
       } else {
         throw Exception('Failed to fetch top assets');
       }
@@ -98,6 +92,50 @@ class TradeProvider with ChangeNotifier {
     isLoading = false;
     notifyListeners();
   }
+
+  Future<void> fetchGraphDataForAsset(String ticker, String period) async {
+    try {
+      final response = await http.get(Uri.parse('http://10.0.2.2:5000/trades/graph_data?ticker=$ticker&period=$period'));
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        assetGraphData = data.map<FlSpot>((point) {
+          return FlSpot(
+            DateTime.parse(point['Date']).millisecondsSinceEpoch.toDouble(),
+            point['Close'].toDouble(),
+          );
+        }).toList();
+      } else {
+        throw Exception('Failed to fetch graph data for asset');
+      }
+    } catch (error) {
+      print('Error fetching graph data for asset: $error');
+    }
+    notifyListeners();
+  }
+
+  Future<bool> addTrade(Map<String, dynamic> newTrade) async {
+    try {
+      final response = await http.post(
+        Uri.parse('http://10.0.2.2:5000/trades/'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(newTrade),
+      );
+
+      if (response.statusCode == 200) {
+        final trade = Trade.fromJson(json.decode(response.body));
+        trades.add(trade);
+        await fetchPortfolioValue();
+        notifyListeners();
+        return true;
+      } else {
+        throw Exception('Failed to add trade');
+      }
+    } catch (error) {
+      print('Error adding trade: $error');
+      return false;
+    }
+  }
+
 
   Future<double> fetchCurrentPrice(String ticker) async {
     try {

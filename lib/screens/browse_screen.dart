@@ -5,6 +5,7 @@ import '../models/asset.dart';
 import '../providers/trade_provider.dart';
 import '../providers/blog_provider.dart';
 import 'article_detail_page.dart';
+import 'asset_detail_page.dart';
 
 class BrowsePage extends StatefulWidget {
   const BrowsePage({super.key});
@@ -264,7 +265,12 @@ class _BrowsePageState extends State<BrowsePage> {
         ),
       ),
       onTap: () {
-        // Implement navigation to asset details
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => AssetDetailPage(asset: asset),
+          ),
+        );
       },
     );
   }
