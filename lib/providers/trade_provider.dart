@@ -136,7 +136,6 @@ class TradeProvider with ChangeNotifier {
     }
   }
 
-
   Future<double> fetchCurrentPrice(String ticker) async {
     try {
       final response = await http.get(Uri.parse('http://10.0.2.2:5000/trades/current_price?ticker=$ticker'));
@@ -165,5 +164,62 @@ class TradeProvider with ChangeNotifier {
       print('Error deleting trade: $error');
     }
     notifyListeners();
+  }
+
+  Future<void> fetchDataEsgScore(BuildContext context, Map<String, dynamic> data) async {
+    final url = Uri.parse('http://10.0.2.2:5000/esg/predict/data');
+    final headers = {'Content-Type': 'application/json'};
+    final body = json.encode(data);
+
+    try {
+      final response = await http.post(url, headers: headers, body: body);
+
+      if (response.statusCode == 200) {
+        final jsonResponse = json.decode(response.body);
+        final esgScore = jsonResponse['esg'];
+        _showEsgResult(context, esgScore);
+      } else {
+        throw Exception('Failed to fetch ESG score');
+      }
+    } catch (error) {
+      print('Error fetching ESG score: $error');
+      _showErrorDialog(context, 'Failed to fetch ESG score');
+    }
+  }
+
+  void _showEsgResult(BuildContext context, double esgScore) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('ESG Score'),
+        content: Text('The calculated ESG score is: $esgScore'),
+        actions: <Widget>[
+          TextButton(
+            child: const Text('Close'),
+            onPressed: () {
+              Navigator.of(ctx).pop();
+            },
+          )
+        ],
+      ),
+    );
+  }
+
+  void _showErrorDialog(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Error'),
+        content: Text(message),
+        actions: <Widget>[
+          TextButton(
+            child: const Text('Close'),
+            onPressed: () {
+              Navigator.of(ctx).pop();
+            },
+          )
+        ],
+      ),
+    );
   }
 }

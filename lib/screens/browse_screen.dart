@@ -4,8 +4,10 @@ import 'package:fl_chart/fl_chart.dart';
 import '../models/asset.dart';
 import '../providers/trade_provider.dart';
 import '../providers/blog_provider.dart';
+import '../widgets/esg_data_popup.dart';
 import 'article_detail_page.dart';
 import 'asset_detail_page.dart';
+
 
 class BrowsePage extends StatefulWidget {
   const BrowsePage({super.key});
@@ -140,18 +142,22 @@ class _BrowsePageState extends State<BrowsePage> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              trailing: blogPost.viewed ? const Icon(Icons.check, color: Colors.green) : null,
+              trailing: blogPost.viewed ? const Icon(
+                  Icons.check, color: Colors.green) : null,
               onTap: () {
                 Navigator.push(
                   context,
                   PageRouteBuilder(
-                    pageBuilder: (context, animation, secondaryAnimation) => ArticleDetailPage(blogPost: blogPost),
-                    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                    pageBuilder: (context, animation, secondaryAnimation) =>
+                        ArticleDetailPage(blogPost: blogPost),
+                    transitionsBuilder: (context, animation, secondaryAnimation,
+                        child) {
                       const begin = Offset(1.0, 0.0);
                       const end = Offset.zero;
                       const curve = Curves.ease;
 
-                      var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                      var tween = Tween(begin: begin, end: end).chain(
+                          CurveTween(curve: curve));
                       var offsetAnimation = animation.drive(tween);
 
                       return SlideTransition(
@@ -162,7 +168,8 @@ class _BrowsePageState extends State<BrowsePage> {
                     transitionDuration: const Duration(seconds: 1),
                   ),
                 ).then((_) {
-                  Provider.of<BlogProvider>(context, listen: false).markAsViewed(blogPost);
+                  Provider.of<BlogProvider>(context, listen: false)
+                      .markAsViewed(blogPost);
                 });
               },
             );
@@ -181,27 +188,33 @@ class _BrowsePageState extends State<BrowsePage> {
       return const Center(child: Text('No assets available'));
     }
 
-    final stocks = tradeProvider.topAssets.where((asset) => Asset.STOCKS.contains(asset['ticker'])).toList();
-    final etfs = tradeProvider.topAssets.where((asset) => Asset.ETFS.contains(asset['ticker'])).toList();
-    final bonds = tradeProvider.topAssets.where((asset) => Asset.BONDS.contains(asset['ticker'])).toList();
+    final stocks = tradeProvider.topAssets.where((asset) =>
+        Asset.STOCKS.contains(asset['ticker'])).toList();
+    final etfs = tradeProvider.topAssets.where((asset) =>
+        Asset.ETFS.contains(asset['ticker'])).toList();
+    final bonds = tradeProvider.topAssets.where((asset) =>
+        Asset.BONDS.contains(asset['ticker'])).toList();
 
     return ListView(
       children: [
         const Padding(
           padding: EdgeInsets.symmetric(vertical: 8.0),
-          child: Text('Stocks', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          child: Text('Stocks',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
         ),
         ...stocks.map((asset) => _buildAssetListTile(asset)).toList(),
         const Divider(thickness: 1, color: Colors.grey),
         const Padding(
           padding: EdgeInsets.symmetric(vertical: 8.0),
-          child: Text('ETFs', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          child: Text('ETFs',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
         ),
         ...etfs.map((asset) => _buildAssetListTile(asset)).toList(),
         const Divider(thickness: 1, color: Colors.grey),
         const Padding(
           padding: EdgeInsets.symmetric(vertical: 8.0),
-          child: Text('Bonds', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          child: Text('Bonds',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
         ),
         ...bonds.map((asset) => _buildAssetListTile(asset)).toList(),
       ],
@@ -214,10 +227,14 @@ class _BrowsePageState extends State<BrowsePage> {
     final history = asset['history'] as List<dynamic>? ?? [];
 
     final spots = history
-        .map((point) => FlSpot(
-      DateTime.parse(point['Date']).millisecondsSinceEpoch.toDouble(),
-      (point['Close'] ?? 0.0).toDouble(),
-    ))
+        .map((point) =>
+        FlSpot(
+          DateTime
+              .parse(point['Date'])
+              .millisecondsSinceEpoch
+              .toDouble(),
+          (point['Close'] ?? 0.0).toDouble(),
+        ))
         .toList();
 
     final isLoss = spots.isNotEmpty && (spots.last.y < spots.first.y);
@@ -276,19 +293,20 @@ class _BrowsePageState extends State<BrowsePage> {
   }
 
 
-
   Widget _buildEsgContent(TradeProvider tradeProvider) {
-    return ListView.builder(
-      itemCount: 10, // Sostituisci con il numero reale di articoli ESG
-      itemBuilder: (context, index) {
-        return ListTile(
-          title: Text('ESG Article ${index + 1}'),
-          subtitle: Text('Description of ESG Article ${index + 1}'),
-          onTap: () {
-            // Implementa la navigazione ai dettagli dell'articolo ESG
+    return Column(
+      children: [
+        ElevatedButton(
+          onPressed: () {
+            showDialog(
+              context: context,
+              builder: (context) => EsgDataPopup(),
+            );
           },
-        );
-      },
+          child: const Text('Calculate ESG via Data'),
+        ),
+        // Aggiungi la tua tabella qui
+      ],
     );
   }
 }
