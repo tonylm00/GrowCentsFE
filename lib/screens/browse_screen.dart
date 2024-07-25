@@ -8,7 +8,6 @@ import '../widgets/esg_data_popup.dart';
 import 'article_detail_page.dart';
 import 'asset_detail_page.dart';
 
-
 class BrowsePage extends StatefulWidget {
   const BrowsePage({super.key});
 
@@ -19,6 +18,8 @@ class BrowsePage extends StatefulWidget {
 class _BrowsePageState extends State<BrowsePage> {
   String searchQuery = '';
   int selectedIndex = 0;
+  bool sortAscending = true;
+  bool sortByEsg = false;
 
   @override
   void initState() {
@@ -26,6 +27,7 @@ class _BrowsePageState extends State<BrowsePage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<BlogProvider>(context, listen: false).fetchBlogPosts();
       Provider.of<TradeProvider>(context, listen: false).fetchTopAssets();
+      Provider.of<TradeProvider>(context, listen: false).fetchEsgData();
     });
   }
 
@@ -73,6 +75,19 @@ class _BrowsePageState extends State<BrowsePage> {
             const SizedBox(height: 20),
             Expanded(
               child: _buildContent(tradeProvider),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                tradeProvider.fetchEsgData();
+                showDialog(
+                  context: context,
+                  builder: (context) => EsgDataPopup(),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.black,
+              ),
+              child: const Text('Calculate ESG via Data'),
             ),
           ],
         ),
@@ -292,20 +307,66 @@ class _BrowsePageState extends State<BrowsePage> {
     );
   }
 
-
   Widget _buildEsgContent(TradeProvider tradeProvider) {
     return Column(
       children: [
-        ElevatedButton(
-          onPressed: () {
-            showDialog(
-              context: context,
-              builder: (context) => EsgDataPopup(),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  sortByEsg = false;
+                  sortAscending = !sortAscending;
+                  tradeProvider.sortEsgData(sortAscending, sortByEsg);
+                });
+              },
+              child: Text(
+                !sortByEsg
+                    ? (sortAscending ? 'Sort by Name \u2191' : 'Sort by Name \u2193')
+                    : 'Sort by Name',
+                style: const TextStyle(color: Colors.black),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  sortByEsg = true;
+                  sortAscending = !sortAscending;
+                  tradeProvider.sortEsgData(sortAscending, sortByEsg);
+                });
+              },
+              child: Text(
+                sortByEsg
+                    ? (sortAscending ? 'Sort by ESG \u2191' : 'Sort by ESG \u2193')
+                    : 'Sort by ESG',
+                style: const TextStyle(color: Colors.black),
+              ),
+            ),
+          ],
+        ),
+        Consumer<TradeProvider>(
+          builder: (context, tradeProvider, _) {
+            if (tradeProvider.isLoading) {
+              return const CircularProgressIndicator();
+            }
+
+            if (tradeProvider.esgData.isEmpty) {
+              return const Text('No data available');
+            }
+
+            return SingleChildScrollView(
+              child: Column(
+                children: tradeProvider.esgData.map((data) {
+                  return ListTile(
+                    title: Text(data['company']),
+                    trailing: Text(data['esg'].toString()),
+                  );
+                }).toList(),
+              ),
             );
           },
-          child: const Text('Calculate ESG via Data'),
         ),
-        // Aggiungi la tua tabella qui
       ],
     );
   }

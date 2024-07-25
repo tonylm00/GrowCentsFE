@@ -11,6 +11,7 @@ class TradeProvider with ChangeNotifier {
   List<Trade> trades = [];
   List<Map<String, dynamic>> topAssets = [];
   List<FlSpot> assetGraphData = [];
+  List<Map<String, dynamic>> esgData = [];
   bool isLoading = false;
 
   Future<void> fetchPortfolioValue() async {
@@ -185,6 +186,38 @@ class TradeProvider with ChangeNotifier {
       print('Error fetching ESG score: $error');
       _showErrorDialog(context, 'Failed to fetch ESG score');
     }
+  }
+
+  Future<void> fetchEsgData() async {
+    isLoading = true;
+    notifyListeners();
+
+    try {
+      final response = await http.get(Uri.parse('http://10.0.2.2:5000/esg/scores'));
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body) as List;
+        esgData = data.cast<Map<String, dynamic>>();
+        print('DATI ESG: $esgData');  // Stampa di debug per verificare i dati ricevuti
+      } else {
+        throw Exception('Failed to fetch ESG data');
+      }
+    } catch (error) {
+      print('Error fetching ESG data: $error');
+    }
+
+    isLoading = false;
+    notifyListeners();
+  }
+
+  void sortEsgData(bool ascending, bool sortByEsg) {
+    esgData.sort((a, b) {
+      if (sortByEsg) {
+        return ascending ? a['esg'].compareTo(b['esg']) : b['esg'].compareTo(a['esg']);
+      } else {
+        return ascending ? a['company'].compareTo(b['company']) : b['company'].compareTo(a['company']);
+      }
+    });
+    notifyListeners();
   }
 
   void _showEsgResult(BuildContext context, double esgScore) {
