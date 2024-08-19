@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../models/trade.dart';
 import '../providers/trade_provider.dart';
+import 'package:flutter_growcents/widgets/chatbot.dart';
+
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,6 +17,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   String selectedPeriod = '1mo';
   int? touchedIndex;
+  Offset buttonPosition = const Offset(326, 300); // pos iniz del pulsante
 
   @override
   void initState() {
@@ -37,7 +40,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 40), // To leave space for the fixed button
+                  const SizedBox(height: 40),
                   const Text(
                     'Capitale',
                     style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
@@ -82,7 +85,7 @@ class _HomeScreenState extends State<HomeScreen> {
             top: 40,
             right: 20,
             child: Container(
-              padding: const EdgeInsets.all(0.1), // Smaller padding for smaller border
+              padding: const EdgeInsets.all(0.1),
               decoration: BoxDecoration(
                 color: Colors.white,
                 shape: BoxShape.circle,
@@ -102,7 +105,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 icon: const Icon(
                   Icons.person,
                   color: Colors.black,
-                  size: 25, // Smaller icon size
+                  size: 25,
                 ),
               ),
             ),
@@ -122,10 +125,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     backgroundColor: Colors.black,
                     padding: const EdgeInsets.symmetric(horizontal: 33, vertical: 15),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15), // More rounded border
+                      borderRadius: BorderRadius.circular(15),
                     ),
                   ),
-                  child: const Text('Esplora', style: TextStyle(fontSize: 17)), // Larger text
+                  child: const Text('Esplora', style: TextStyle(fontSize: 17)),
                 ),
                 ElevatedButton(
                   onPressed: () {
@@ -135,14 +138,52 @@ class _HomeScreenState extends State<HomeScreen> {
                     backgroundColor: Colors.black,
                     padding: const EdgeInsets.symmetric(horizontal: 33, vertical: 15),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15), // More rounded border
+                      borderRadius: BorderRadius.circular(15),
                     ),
                   ),
-                  child: const Text('Transfer', style: TextStyle(fontSize: 17)), // Larger text
+                  child: const Text('Transfer', style: TextStyle(fontSize: 17)),
                 ),
               ],
             ),
           ),
+          Positioned(
+            left: buttonPosition.dx,
+            top: buttonPosition.dy,
+            child: Draggable(
+              feedback: FloatingActionButton(
+                onPressed: () {},
+                backgroundColor: Colors.grey,
+                child: const Icon(Icons.chat),
+              ),
+              childWhenDragging: Container(),
+              onDraggableCanceled: (velocity, offset) {
+                setState(() {
+                  final screenWidth = MediaQuery.of(context).size.width;
+
+                  double distanceLeft = offset.dx;
+                  double distanceRight = screenWidth - offset.dx;
+
+                  if (distanceLeft <= distanceRight) {
+                    buttonPosition = Offset(10, offset.dy);
+                  } else {
+                    buttonPosition = Offset(screenWidth - 56 - 10, offset.dy);
+                  }
+                });
+              },
+
+              child: FloatingActionButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const ChatBotWidget()),
+                  );
+                },
+                backgroundColor: Colors.black,
+                child: const Icon(Icons.chat),
+              ),
+            ),
+          ),
+
         ],
       ),
     );
