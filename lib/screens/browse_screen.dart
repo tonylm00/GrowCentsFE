@@ -16,10 +16,10 @@ class BrowsePage extends StatefulWidget {
 }
 
 class _BrowsePageState extends State<BrowsePage> {
-  String searchQuery = '';
   int selectedIndex = 0;
   bool sortAscending = true;
   bool sortByEsg = false;
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -28,7 +28,14 @@ class _BrowsePageState extends State<BrowsePage> {
       Provider.of<BlogProvider>(context, listen: false).fetchBlogPosts();
       Provider.of<TradeProvider>(context, listen: false).fetchTopAssets();
       Provider.of<TradeProvider>(context, listen: false).fetchEsgData();
+      Provider.of<TradeProvider>(context, listen: false).fetchSupportedTickers();
     });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override
@@ -42,30 +49,54 @@ class _BrowsePageState extends State<BrowsePage> {
             padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
-                const SizedBox(height: 40), // To leave space for the fixed button
+                const SizedBox(height: 40),
                 const Text(
                   'Esplora',
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 20),
-                TextField(
-                  onChanged: (value) {
-                    setState(() {
-                      searchQuery = value;
-                    });
+
+                // Barra di ricerca
+                Autocomplete<Map<String, dynamic>>(
+                  optionsBuilder: (TextEditingValue textEditingValue) {
+                    if (textEditingValue.text.isEmpty) {
+                      return const Iterable<Map<String, dynamic>>.empty();
+                    }
+                    return tradeProvider.filterSupportedTickers(textEditingValue.text);
                   },
-                  decoration: InputDecoration(
-                    hintText: 'Search for assets',
-                    prefixIcon: const Icon(Icons.search),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(15),
-                      borderSide: BorderSide.none,
-                    ),
-                    filled: true,
-                    fillColor: Colors.grey[200],
-                  ),
+                  displayStringForOption: (Map<String, dynamic> option) =>
+                  '${option['ticker']} - ${option['company']}',
+                  fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+                    return TextField(
+                      controller: controller,
+                      focusNode: focusNode,
+                      decoration: InputDecoration(
+                        hintText: 'Cerca un asset',
+                        prefixIcon: const Icon(Icons.search),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(15),
+                          borderSide: BorderSide.none,
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey[200],
+                      ),
+                    );
+                  },
+                  onSelected: (Map<String, dynamic> selection) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => AssetDetailPage(ticker: selection['ticker']),
+                      ),
+                    );
+                  },
                 ),
+
+
+
                 const SizedBox(height: 20),
+
+                // Pulsanti delle categorie (Learning, Asset, ESG)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
@@ -74,13 +105,16 @@ class _BrowsePageState extends State<BrowsePage> {
                     _buildCategoryButton('ESG', 2),
                   ],
                 ),
+
                 const SizedBox(height: 20),
+
                 Expanded(
                   child: _buildContent(tradeProvider),
                 ),
               ],
             ),
           ),
+
           if (selectedIndex == 2)
             Positioned(
               bottom: 16.0,
@@ -210,38 +244,41 @@ class _BrowsePageState extends State<BrowsePage> {
     }
 
     if (tradeProvider.topAssets.isEmpty) {
-      return const Center(child: Text('Nessun asset disponibile'));
+      return const Center(child: CircularProgressIndicator());
     }
 
-    final stocks = tradeProvider.topAssets.where((asset) =>
-        Asset.STOCKS.contains(asset['ticker'])).toList();
-    final etfs = tradeProvider.topAssets.where((asset) =>
-        Asset.ETFS.contains(asset['ticker'])).toList();
-    final bonds = tradeProvider.topAssets.where((asset) =>
-        Asset.BONDS.contains(asset['ticker'])).toList();
+    final stocks = tradeProvider.topAssets.where((asset) => Asset.STOCKS.contains(asset['ticker'])).toList();
+    final etfs = tradeProvider.topAssets.where((asset) => Asset.ETFS.contains(asset['ticker'])).toList();
+    final bonds = tradeProvider.topAssets.where((asset) => Asset.BONDS.contains(asset['ticker'])).toList();
 
     return ListView(
       children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(vertical: 8.0),
-          child: Text('Stocks',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-        ),
-        ...stocks.map((asset) => _buildAssetListTile(asset)).toList(),
-        const Divider(thickness: 1, color: Colors.grey),
-        const Padding(
-          padding: EdgeInsets.symmetric(vertical: 8.0),
-          child: Text('ETFs',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-        ),
-        ...etfs.map((asset) => _buildAssetListTile(asset)).toList(),
-        const Divider(thickness: 1, color: Colors.grey),
-        const Padding(
-          padding: EdgeInsets.symmetric(vertical: 8.0),
-          child: Text('Bonds',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-        ),
-        ...bonds.map((asset) => _buildAssetListTile(asset)).toList(),
+        if (stocks.isNotEmpty) ...[
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8.0),
+            child: Text('Stocks',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          ),
+          ...stocks.map((asset) => _buildAssetListTile(asset)).toList(),
+          const Divider(thickness: 1, color: Colors.grey),
+        ],
+        if (etfs.isNotEmpty) ...[
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8.0),
+            child: Text('ETFs',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          ),
+          ...etfs.map((asset) => _buildAssetListTile(asset)).toList(),
+          const Divider(thickness: 1, color: Colors.grey),
+        ],
+        if (bonds.isNotEmpty) ...[
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8.0),
+            child: Text('Bonds',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          ),
+          ...bonds.map((asset) => _buildAssetListTile(asset)).toList(),
+        ],
       ],
     );
   }
@@ -310,7 +347,7 @@ class _BrowsePageState extends State<BrowsePage> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => AssetDetailPage(asset: asset),
+            builder: (context) => AssetDetailPage(ticker: asset['ticker']),
           ),
         );
       },

@@ -13,6 +13,39 @@ class TradeProvider with ChangeNotifier {
   List<FlSpot> assetGraphData = [];
   List<Map<String, dynamic>> esgData = [];
   bool isLoading = false;
+  List<Map<String, dynamic>> supportedTickers = [];
+
+  Future<void> fetchSupportedTickers() async {
+    try {
+      final response = await http.get(Uri.parse('http://10.0.2.2:5000/trades/supported_tickers'));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        supportedTickers = data.entries.map((entry) {
+          return {'ticker': entry.key, 'company': entry.value};
+        }).toList();
+        notifyListeners();
+      } else {
+        throw Exception('Failed to fetch supported tickers');
+      }
+    } catch (error) {
+      print('Error fetching supported tickers: $error');
+    }
+  }
+
+  List<Map<String, dynamic>> filterSupportedTickers(String query) {
+    if (query.isEmpty) {
+      return [];
+    }
+    final results = supportedTickers.where((ticker) {
+      final tickerName = ticker['ticker'].toLowerCase();
+      final companyName = ticker['company'].toLowerCase();
+      return tickerName.contains(query.toLowerCase()) || companyName.contains(query.toLowerCase());
+    }).toList();
+
+    print("Risultati filtrati per '$query': $results");
+    return results;
+  }
+
 
   Future<void> fetchPortfolioValue() async {
     try {
@@ -225,7 +258,7 @@ class TradeProvider with ChangeNotifier {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('ESG Score'),
-        content: Text('The calculated ESG score is: $esgScore'),
+        content: Text('L\'ESG risulta essere di: $esgScore\n\nLa previsione è fornita dal nostro modello di Intelligenza Artificiale, basato su metriche oggettive!'),
         actions: <Widget>[
           TextButton(
             child: const Text('Close'),
@@ -242,11 +275,11 @@ class TradeProvider with ChangeNotifier {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Error'),
+        title: const Text('Errore'),
         content: Text(message),
         actions: <Widget>[
           TextButton(
-            child: const Text('Close'),
+            child: const Text('Chiudi'),
             onPressed: () {
               Navigator.of(ctx).pop();
             },

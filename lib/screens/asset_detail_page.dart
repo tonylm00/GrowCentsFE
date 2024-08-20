@@ -7,9 +7,9 @@ import 'dart:convert';
 import '../providers/trade_provider.dart';
 
 class AssetDetailPage extends StatefulWidget {
-  final Map<String, dynamic> asset;
+  final String ticker;
 
-  const AssetDetailPage({required this.asset, Key? key}) : super(key: key);
+  const AssetDetailPage({required this.ticker, Key? key}) : super(key: key);
 
   @override
   _AssetDetailPageState createState() => _AssetDetailPageState();
@@ -17,34 +17,59 @@ class AssetDetailPage extends StatefulWidget {
 
 class _AssetDetailPageState extends State<AssetDetailPage> {
   String selectedPeriod = '1mo';
-  DateTime? _selectedDate;
+  Map<String, dynamic>? assetDetails;
+  bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    fetchData();
+    fetchAssetDetails();
   }
 
-  Future<void> fetchData() async {
-    await Provider.of<TradeProvider>(context, listen: false)
-        .fetchGraphDataForAsset(widget.asset['ticker'], selectedPeriod);
+  Future<void> fetchAssetDetails() async {
+    try {
+      final response = await http.get(Uri.parse('http://10.0.2.2:5000/trades/asset_details/${widget.ticker}?period=$selectedPeriod'));
+
+      if (response.statusCode == 200) {
+        setState(() {
+          assetDetails = json.decode(response.body);
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Errore nel caricamento dei dettagli dell\'asset')),
+        );
+      }
+    } catch (error) {
+      setState(() {
+        isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Errore nel caricamento dei dettagli dell\'asset')),
+      );
+    }
   }
+
 
   @override
   Widget build(BuildContext context) {
-    final tradeProvider = Provider.of<TradeProvider>(context);
-    final graphData = tradeProvider.assetGraphData;
-
     return Scaffold(
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: SingleChildScrollView(
+        child: isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : assetDetails == null
+            ? const Center(child: Text('Nessun dato disponibile'))
+            : SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 40),
               Text(
-                '${widget.asset['company']} - ${widget.asset['ticker']}',
+                '${assetDetails!['company']} - ${assetDetails!['ticker']}',
                 style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 20),
@@ -52,7 +77,7 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
               const SizedBox(height: 20),
               SizedBox(
                 height: 300,
-                child: _buildGraph(graphData),
+                child: _buildGraph(assetDetails!['history']),
               ),
               const SizedBox(height: 20),
               _buildCollapsibleTable(),
@@ -78,7 +103,7 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
   }
 
   Widget _buildPeriodButtons() {
-    final periods = ['1d', '1mo', '3mo', '1y', 'max'];
+    final periods = ['1mo', '3mo', '6mo', '1y', 'max'];
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: periods.map((period) {
@@ -86,7 +111,7 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
           onPressed: () {
             setState(() {
               selectedPeriod = period;
-              fetchData();
+              fetchAssetDetails();
             });
           },
           style: ElevatedButton.styleFrom(
@@ -98,46 +123,38 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
     );
   }
 
-  Widget _buildGraph(List<FlSpot> data) {
-    if (data.isEmpty) {
+  Widget _buildGraph(List<dynamic> history) {
+    if (history.isEmpty) {
       return const Center(child: Text('Nessun dato disponibile'));
     }
 
-    final interval = data.length > 1 ? (data.last.x - data.first.x) / 3 : 1.0;
+    final spots = history.map((point) {
+      final date = DateTime.parse(point['Date']).millisecondsSinceEpoch.toDouble();
+      final closePrice = (point['Close'] ?? 0.0).toDouble();
+      return FlSpot(date, closePrice);
+    }).toList();
+
+    final isLoss = spots.isNotEmpty && (spots.last.y < spots.first.y);
+    final chartColor = isLoss ? Colors.red : Colors.green;
 
     return LineChart(
       LineChartData(
         lineBarsData: [
           LineChartBarData(
-            spots: data,
+            spots: spots,
             isCurved: true,
             barWidth: 4,
-            color: Colors.green,
+            color: chartColor,
             belowBarData: BarAreaData(
               show: true,
-              color: Colors.green.withOpacity(0.25),
+              color: chartColor.withOpacity(0.25),
             ),
             dotData: FlDotData(show: false),
           ),
         ],
         titlesData: FlTitlesData(
           bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: false,
-              reservedSize: 22,
-              getTitlesWidget: (value, meta) {
-                final date = DateTime.fromMillisecondsSinceEpoch(value.toInt());
-                final formattedDate = '${date.day}/${date.month}';
-                return Padding(
-                  padding: const EdgeInsets.only(top: 8.0),
-                  child: Text(
-                    formattedDate,
-                    style: const TextStyle(color: Colors.black),
-                  ),
-                );
-              },
-              interval: interval,
-            ),
+            sideTitles: SideTitles(showTitles: false),
           ),
           leftTitles: AxisTitles(
             sideTitles: SideTitles(showTitles: false),
@@ -176,7 +193,7 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
   }
 
   Widget _buildCollapsibleTable() {
-    final recentHistory = widget.asset['history']
+    final recentHistory = assetDetails!['history']
         .where((record) => DateTime.parse(record['Date']).isAfter(DateTime.now().subtract(const Duration(days: 30))))
         .toList();
 
@@ -214,20 +231,20 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
   }
 
   void _showAddTradeDialog(BuildContext context) {
-    final _formKey = GlobalKey<FormState>();
-    double? _unitPrice;
-    double? _quantity;
-    DateTime? _selectedDate;
+    final formKey = GlobalKey<FormState>();
+    double? unitPrice;
+    double? quantity;
+    DateTime? selectedDate;
 
     void _submitForm() async {
-      if (_formKey.currentState?.validate() ?? false) {
-        _formKey.currentState?.save();
+      if (formKey.currentState?.validate() ?? false) {
+        formKey.currentState?.save();
 
         final tradeData = {
-          'ticker': widget.asset['ticker'],
-          'unit_price': _unitPrice,
-          'quantity': _quantity,
-          'date': _selectedDate?.toIso8601String(),
+          'ticker': assetDetails!['ticker'],
+          'unit_price': unitPrice,
+          'quantity': quantity,
+          'date': selectedDate?.toIso8601String(),
         };
 
         final response = await http.post(
@@ -259,16 +276,16 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
             return AlertDialog(
               title: const Text('Add Trade'),
               content: Form(
-                key: _formKey,
+                key: formKey,
                 child: SingleChildScrollView(
                   child: ListBody(
                     children: [
-                      Text('Ticker: ${widget.asset['ticker']}'),
+                      Text('Ticker: ${assetDetails!['ticker']}'),
                       TextFormField(
                         decoration: const InputDecoration(labelText: 'Prezzo dell\' asset'),
                         keyboardType: TextInputType.number,
                         onSaved: (value) {
-                          _unitPrice = double.parse(value!);
+                          unitPrice = double.parse(value!);
                         },
                         validator: (value) {
                           if (value == null || double.tryParse(value) == null) {
@@ -281,7 +298,7 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
                         decoration: const InputDecoration(labelText: 'Quantità'),
                         keyboardType: TextInputType.number,
                         onSaved: (value) {
-                          _quantity = double.parse(value!);
+                          quantity = double.parse(value!);
                         },
                         validator: (value) {
                           if (value == null || double.tryParse(value) == null) {
@@ -294,9 +311,9 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
                         children: [
                           Expanded(
                             child: Text(
-                              _selectedDate == null
+                              selectedDate == null
                                   ? 'Nessuna data selezionata!'
-                                  : 'Data: ${DateFormat('dd/MM/yyyy').format(_selectedDate!)}',
+                                  : 'Data: ${DateFormat('dd/MM/yyyy').format(selectedDate!)}',
                             ),
                           ),
                           TextButton(
@@ -311,7 +328,7 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
                                   return;
                                 }
                                 setState(() {
-                                  _selectedDate = pickedDate;
+                                  selectedDate = pickedDate;
                                 });
                               });
                             },
