@@ -100,7 +100,7 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
 
   Widget _buildGraph(List<FlSpot> data) {
     if (data.isEmpty) {
-      return const Center(child: Text('No data available'));
+      return const Center(child: Text('Nessun dato disponibile'));
     }
 
     final interval = data.length > 1 ? (data.last.x - data.first.x) / 3 : 1.0;
@@ -123,7 +123,7 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
         titlesData: FlTitlesData(
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
-              showTitles: true,
+              showTitles: false,
               reservedSize: 22,
               getTitlesWidget: (value, meta) {
                 final date = DateTime.fromMillisecondsSinceEpoch(value.toInt());

@@ -36,61 +36,71 @@ class _BrowsePageState extends State<BrowsePage> {
     final tradeProvider = Provider.of<TradeProvider>(context);
 
     return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            const SizedBox(height: 40), // To leave space for the fixed button
-            const Text(
-              'Esplora',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              onChanged: (value) {
-                setState(() {
-                  searchQuery = value;
-                });
-              },
-              decoration: InputDecoration(
-                hintText: 'Search for assets',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(15),
-                  borderSide: BorderSide.none,
-                ),
-                filled: true,
-                fillColor: Colors.grey[200],
-              ),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      body: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
               children: [
-                _buildCategoryButton('Learning', 0),
-                _buildCategoryButton('Asset', 1),
-                _buildCategoryButton('ESG', 2),
+                const SizedBox(height: 40), // To leave space for the fixed button
+                const Text(
+                  'Esplora',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  onChanged: (value) {
+                    setState(() {
+                      searchQuery = value;
+                    });
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'Search for assets',
+                    prefixIcon: const Icon(Icons.search),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                      borderSide: BorderSide.none,
+                    ),
+                    filled: true,
+                    fillColor: Colors.grey[200],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildCategoryButton('Learning', 0),
+                    _buildCategoryButton('Asset', 1),
+                    _buildCategoryButton('ESG', 2),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Expanded(
+                  child: _buildContent(tradeProvider),
+                ),
               ],
             ),
-            const SizedBox(height: 20),
-            Expanded(
-              child: _buildContent(tradeProvider),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                tradeProvider.fetchEsgData();
-                showDialog(
-                  context: context,
-                  builder: (context) => EsgDataPopup(),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black,
+          ),
+          if (selectedIndex == 2)
+            Positioned(
+              bottom: 16.0,
+              left: 16.0,
+              right: 16.0,
+              child: ElevatedButton(
+                onPressed: () {
+                  tradeProvider.fetchEsgData();
+                  showDialog(
+                    context: context,
+                    builder: (context) => EsgDataPopup(),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.black,
+                ),
+                child: const Text('Calcola ESG'),
               ),
-              child: const Text('Calculate ESG via Data'),
             ),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -133,7 +143,7 @@ class _BrowsePageState extends State<BrowsePage> {
         }
 
         if (blogProvider.blogPosts.isEmpty) {
-          return const Center(child: Text('No articles available'));
+          return const Center(child: Text('Nessun articolo disponibile'));
         }
 
         return ListView.builder(
@@ -200,7 +210,7 @@ class _BrowsePageState extends State<BrowsePage> {
     }
 
     if (tradeProvider.topAssets.isEmpty) {
-      return const Center(child: Text('No assets available'));
+      return const Center(child: Text('Nessun asset disponibile'));
     }
 
     final stocks = tradeProvider.topAssets.where((asset) =>
@@ -323,8 +333,8 @@ class _BrowsePageState extends State<BrowsePage> {
               },
               child: Text(
                 !sortByEsg
-                    ? (sortAscending ? 'Sort by Name \u2191' : 'Sort by Name \u2193')
-                    : 'Sort by Name',
+                    ? (sortAscending ? 'Ordina per Nome \u2191' : 'Ordina per Nome \u2193')
+                    : 'Ordina per Nome',
                 style: const TextStyle(color: Colors.black),
               ),
             ),
@@ -338,8 +348,8 @@ class _BrowsePageState extends State<BrowsePage> {
               },
               child: Text(
                 sortByEsg
-                    ? (sortAscending ? 'Sort by ESG \u2191' : 'Sort by ESG \u2193')
-                    : 'Sort by ESG',
+                    ? (sortAscending ? 'Ordina per ESG \u2191' : 'Ordina per ESG \u2193')
+                    : 'Ordina per ESG',
                 style: const TextStyle(color: Colors.black),
               ),
             ),
@@ -352,17 +362,19 @@ class _BrowsePageState extends State<BrowsePage> {
             }
 
             if (tradeProvider.esgData.isEmpty) {
-              return const Text('No data available');
+              return const Text('Nessun dato disponibile');
             }
 
-            return SingleChildScrollView(
-              child: Column(
-                children: tradeProvider.esgData.map((data) {
+            return Expanded(
+              child: ListView.builder(
+                itemCount: tradeProvider.esgData.length,
+                itemBuilder: (context, index) {
+                  final data = tradeProvider.esgData[index];
                   return ListTile(
                     title: Text(data['company']),
                     trailing: Text(data['esg'].toString()),
                   );
-                }).toList(),
+                },
               ),
             );
           },

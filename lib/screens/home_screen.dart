@@ -141,7 +141,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       borderRadius: BorderRadius.circular(15),
                     ),
                   ),
-                  child: const Text('Transfer', style: TextStyle(fontSize: 17)),
+                  child: const Text('Aggiungi', style: TextStyle(fontSize: 17)),
                 ),
               ],
             ),
@@ -212,7 +212,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildGraph(List<FlSpot> data) {
     if (data.isEmpty) {
-      return const Center(child: Text('No data available'));
+      return const Center(child: Text('Nessun dato disponibile'));
     }
 
     final interval = data.length > 1 ? (data.last.x - data.first.x) / 3 : 1.0;
@@ -223,7 +223,7 @@ class _HomeScreenState extends State<HomeScreen> {
           LineChartBarData(
             spots: data,
             isCurved: true,
-            barWidth: 4,
+            barWidth: 5,
             color: Colors.green,
             belowBarData: BarAreaData(
               show: true,
@@ -235,7 +235,7 @@ class _HomeScreenState extends State<HomeScreen> {
         titlesData: FlTitlesData(
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
-              showTitles: true,
+              showTitles: false,
               reservedSize: 22,
               getTitlesWidget: (value, meta) {
                 final date = DateTime.fromMillisecondsSinceEpoch(value.toInt());
@@ -275,7 +275,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 const textStyle = TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
-                  fontSize: 14,
+                  fontSize: 12,
                 );
                 final date = DateTime.fromMillisecondsSinceEpoch(touchedSpot.x.toInt());
                 final formattedDate = '${date.day}/${date.month}/${date.year}';
@@ -324,7 +324,7 @@ class _HomeScreenState extends State<HomeScreen> {
               );
             } else if (snapshot.hasError) {
               return const ListTile(
-                title: Text('Error loading price'),
+                title: Text('Errore nel caricamento prezzo'),
               );
             } else {
               final currentPrice = snapshot.data!;
@@ -434,7 +434,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final total = stocksTotal + etfsTotal + bondsTotal;
 
     if (total == 0) {
-      return const Center(child: Text('Dati insufficienti per il grafico a torta!'));
+      return const Center(child: Text('Dati insufficienti per generare il grafico!'));
     }
 
     final sections = <PieChartSectionData>[];
