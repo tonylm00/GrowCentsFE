@@ -58,7 +58,7 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(20.0),
         child: isLoading
             ? const Center(child: CircularProgressIndicator())
             : assetDetails == null
@@ -69,16 +69,25 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
             children: [
               const SizedBox(height: 40),
               Text(
-                '${assetDetails!['company']} - ${assetDetails!['ticker']}',
+                assetDetails!['company'],
                 style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
+              const SizedBox(height: 8),
+              Text(
+                assetDetails!['ticker'],
+                style: const TextStyle(fontSize: 18, color: Colors.grey),
+              ),
+              const SizedBox(height: 20),
+              _buildCurrentPriceAndChange(),
               const SizedBox(height: 20),
               _buildPeriodButtons(),
               const SizedBox(height: 20),
               SizedBox(
-                height: 300,
+                height: 190,
                 child: _buildGraph(assetDetails!['history']),
               ),
+              const SizedBox(height: 20),
+              _buildCompanyDetails(),
               const SizedBox(height: 20),
               _buildCollapsibleTable(),
               const SizedBox(height: 20),
@@ -92,7 +101,7 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
                       borderRadius: BorderRadius.circular(15),
                     ),
                   ),
-                  child: const Text('Add Trade', style: TextStyle(fontSize: 17)),
+                  child: const Text('Aggiungi al portafoglio', style: TextStyle(fontSize: 17)),
                 ),
               ),
             ],
@@ -102,8 +111,39 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
     );
   }
 
+  Widget _buildCurrentPriceAndChange() {
+    if (assetDetails == null || assetDetails!['history'].isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    // Estrai il prezzo corrente e il prezzo all'inizio del periodo selezionato
+    final history = assetDetails!['history'];
+    final currentPrice = history.last['Close'];
+    final initialPrice = history.first['Close'];
+    final changePercentage = ((currentPrice - initialPrice) / initialPrice) * 100;
+
+    final isPositiveChange = changePercentage >= 0;
+    final changeColor = isPositiveChange ? Colors.green : Colors.red;
+    final changeSymbol = isPositiveChange ? '+' : '';
+
+    return Row(
+      children: [
+        Text(
+          'Valore corrente: ${currentPrice.toStringAsFixed(2)} €',
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          '($changeSymbol${changePercentage.toStringAsFixed(2)}%)',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: changeColor),
+        ),
+      ],
+    );
+  }
+
+
   Widget _buildPeriodButtons() {
-    final periods = ['1mo', '3mo', '6mo', '1y', 'max'];
+    final periods = ['1mo', '6mo', '1y', '2y', '5y'];
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: periods.map((period) {
@@ -198,7 +238,7 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
         .toList();
 
     return ExpansionTile(
-      title: const Text('Andamento mensile'),
+      title: const Text('Ultimi dati finanziari'),
       children: [
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
@@ -230,6 +270,127 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
     );
   }
 
+  Widget _buildCompanyDetails() {
+    final companyOfficers = assetDetails!['companyOfficers'] as List<dynamic>? ?? [];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildCompanyDetailsCollapse(),
+        const SizedBox(height: 10),
+        _buildDescriptionTile(),
+        const SizedBox(height: 10),
+        _buildOfficersTile(companyOfficers),
+
+      ],
+    );
+  }
+
+
+  Widget _buildCompanyDetailsCollapse() {
+    final rows = [
+      _buildDataRow('Città', assetDetails!['city']),
+      _buildDataRow('Paese', assetDetails!['country']),
+      _buildDataRow('Codice postale', assetDetails!['zip']),
+      _buildDataRow('Settore', assetDetails!['sector']),
+      _buildDataRow('Industria', assetDetails!['industry']),
+      _buildDataRow('Dipendenti', assetDetails!['fullTimeEmployees']?.toString()),
+      _buildDataRow('Rischio Audit', _formatRiskValue(assetDetails!['auditRisk'])),
+      _buildDataRow('Rischio Consiglio di Amministrazione', _formatRiskValue(assetDetails!['boardRisk'])),
+    ];
+
+    // Filtra le righe che non hanno valore N/A o null
+    final filteredRows = rows.where((row) => row != null).toList();
+
+    // Se tutte le righe sono N/A o null, non mostrare il collapse
+    if (filteredRows.isEmpty) {
+      return const SizedBox.shrink(); // Restituisce uno spazio vuoto se non ci sono dati da mostrare
+    }
+
+    return ExpansionTile(
+      title: const Text(
+        'Dettagli dell\'azienda',
+        style: TextStyle(fontSize: 16),
+      ),
+      children: [
+        DataTable(
+          columnSpacing: 10,
+          columns: const [
+            DataColumn(label: SizedBox()),
+            DataColumn(label: SizedBox()),
+          ],
+          rows: filteredRows.cast<DataRow>(), // Cast a DataRow dopo il filtraggio
+        ),
+      ],
+    );
+  }
+
+  DataRow? _buildDataRow(String label, String? value) {
+    if (value == null || value == 'N/A') return null;
+    return DataRow(
+      cells: [
+        DataCell(Text(label, style: const TextStyle(fontWeight: FontWeight.bold))),
+        DataCell(Text(value)),
+      ],
+    );
+  }
+
+  String _formatRiskValue(dynamic value) {
+    if (value != null && value != 'N/A') {
+      return '$value su 10';
+    } else {
+      return 'N/A';
+    }
+  }
+
+
+  Widget _buildOfficersTile(List<dynamic> companyOfficers) {
+    // Filtra i dirigenti che hanno valori non nulli e non N/A
+    final filteredOfficers = companyOfficers.where((officer) =>
+    officer['name'] != null &&
+        officer['name'] != 'N/A' &&
+        officer['title'] != null &&
+        officer['title'] != 'N/A').toList();
+
+    // Se non ci sono dirigenti validi, non visualizzare nulla
+    if (filteredOfficers.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return ExpansionTile(
+      title: const Text(
+        'Dirigenti',
+        style: TextStyle(fontSize: 16),
+      ),
+      children: filteredOfficers.map((officer) {
+        return ListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Text('${officer['name']}'),
+          subtitle: Text('${officer['title']} (${officer['yearBorn'] ?? 'N/A'})'),
+        );
+      }).toList(),
+    );
+  }
+
+
+  Widget _buildDescriptionTile() {
+    final description = assetDetails!['longBusinessSummary'];
+    if (description == null || description == 'N/A') return const SizedBox.shrink();
+
+    return ExpansionTile(
+      title: const Text(
+        'Descrizione ufficiale',
+        style: TextStyle(fontSize: 16),
+      ),
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Text(description),
+        ),
+      ],
+    );
+  }
+
   void _showAddTradeDialog(BuildContext context) {
     final formKey = GlobalKey<FormState>();
     double? unitPrice;
@@ -256,7 +417,7 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
         if (response.statusCode == 200) {
           if (mounted) {
             await Provider.of<TradeProvider>(context, listen: false).fetchTrades();
-            Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false); // Redirect to home page
+            Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
           }
         } else {
           if (mounted) {
@@ -274,7 +435,7 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              title: const Text('Add Trade'),
+              title: const Text('Aggiungi al portafoglio'),
               content: Form(
                 key: formKey,
                 child: SingleChildScrollView(

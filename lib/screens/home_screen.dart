@@ -61,7 +61,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   _buildPeriodButtons(),
                   const SizedBox(height: 20),
                   SizedBox(
-                    height: 300,
+                    height: 200,
                     child: _buildGraph(tradeProvider.graphData),
                   ),
                   const SizedBox(height: 20),
