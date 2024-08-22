@@ -1,16 +1,51 @@
-# flutter_growcents
+# GrowCents
 
-Personal Finance Multiplatform Application
+**Description**  
+GrowCents is a mobile application designed for investment management. Users can track their portfolios, view asset details, add new trades, and consult up-to-date financial information. The app also includes an educational section and an integrated chatbot for assistance.
 
-## Getting Started
+## Main Features
+- Portfolio investment tracking
+- Detailed asset view
+- Add and manage trades
+- Interactive portfolio performance charts
+- Educational section and integrated chatbot
+- Asset performance and risk analysis
 
-This project is a starting point for a Flutter application.
+## Mockups
+![Homepage](https://i.postimg.cc/gJmXDxJt/homepage-left.png)
+![Opened Position](https://i.postimg.cc/BQp0LX9Q/opened-position-portrait.png)
+![Learning Section](https://i.postimg.cc/G2DRHKrZ/esplora-learning-portrait.png)
+![Browse](https://i.postimg.cc/FsDMF83Y/esplora-asset-portrait.png)
+![ESG](https://i.postimg.cc/YShMwkP2/esplora-esg-portrait.png)
+![Bot](https://i.postimg.cc/DfdVH8zd/boy-1-portrait.png)
 
-A few resources to get you started if this is your first Flutter project:
+[More mockups are available here](https://postimg.cc/gallery/qpj4S7m)
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## Installation
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/tonylm00/GrowCentsFE
+
+2. **Install dependencies:**
+- For the backend: follow the instructions written here https://github.com/tonylm00/GrowCentsBE.
+- For mobile frontend:
+   ```bash
+   flutter pub get
+
+## Usage
+**Homepage**
+
+The homepage displays the current portfolio value and percentage changes based on the selected period. Users can explore their open positions and view detailed charts.
+
+**Asset Management**
+
+Users can add, edit, or delete assets from their portfolio. Each asset shows its performance with an interactive chart and provides detailed information.
+
+**Educational Section**
+
+A dedicated learning section allows users to explore educational articles and financial resources.
+
+**ChatBot**
+
+An integrated chatbot offers assistance for portfolio management and investment information
