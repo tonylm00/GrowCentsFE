@@ -27,6 +27,7 @@ class _MifidScreenState extends State<MifidScreen> {
             title: const Text('Risultato MiFID'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Profilo di rischio: ${result!.riskProfile}'),
                 Text('Allocazione degli asset: ${result.assetAllocation}'),
